@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <vector>
 #include <iostream>
 
@@ -60,6 +61,18 @@ public:
         return mData[i * mCols + j];
     }
 
+    void Print()
+    {
+        for (size_t i = 0; i < mCols; i++)
+        {
+            for (size_t j = 0; j < mRows; j++)
+            {
+                cout << operator()(i,j) << "\t";
+            }
+            cout << endl;
+        }
+    }
+
     T operator()(size_t i, size_t j) const
     {
         validateIndexes(i, j);
@@ -75,7 +88,7 @@ public:
         Matrix(rows, cols, v);
     }
 
-    Matrix &operator*=(const Matrix &other)
+    Matrix &operator*=(Matrix &other)
     {
         if (mCols != other.mRows)
             throw invalid_argument(
@@ -99,4 +112,28 @@ public:
         mData = result.mData;
         return *this;
     }
+
+    Matrix MultiplyParallel(Matrix &other)
+    {
+        if (mCols != other.mRows)
+            throw invalid_argument(
+                "Cannot multiply these matrices: L " + to_string(mRows) + "x" +
+                to_string(mCols) + ", R " + to_string(other.mRows) + "x" + to_string(other.mCols));
+
+        Matrix result(mRows, other.mCols);
+
+        #pragma omp parallel for shared(a, b, c) private(i,j,k)
+        for (size_t i = 0; i < mRows; i++)
+        {
+            for (size_t k = 0; k < mCols; k++)
+            {
+                for (size_t j = 0; j < other.mCols; j++)
+                {
+                    result(i,j) += (operator()(i,k) * other(k,j));
+                }
+            }
+        }
+        return result;
+    }
+
 };

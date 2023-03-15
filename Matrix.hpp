@@ -99,11 +99,10 @@ public:
 
         for (size_t i = 0; i < result.mRows; i++)
         {
-            for (size_t j = 0; j < result.mCols; j++)
+            for (size_t k = 0; k < result.mCols; k++)
             {
-                result(i, j) = 0;
-                for (size_t ii = 0; ii < mCols; ii++)
-                    result(i, j) += operator()(i, ii) * other(ii, j);
+                for (size_t j = 0; j < mCols; j++)
+                    result(i, k) += operator()(i, j) * other(j, k);
             }
         }
 
@@ -122,18 +121,15 @@ public:
 
         Matrix result(mRows, other.mCols);
 
-        #pragma omp parallel for shared(a, b, c) private(i,j,k)
-        for (size_t i = 0; i < mRows; i++)
+        #pragma omp parallel for shared(&this, other, result) private(i,j,k)
+        for (size_t i = 0; i < result.mRows; i++)
         {
-            for (size_t k = 0; k < mCols; k++)
+            for (size_t k = 0; k < result.mCols; k++)
             {
-                for (size_t j = 0; j < other.mCols; j++)
-                {
-                    result(i,j) += (operator()(i,k) * other(k,j));
-                }
+                for (size_t j = 0; j < mCols; j++)
+                    result(i, k) += operator()(i, j) * other(k, j);
             }
         }
         return result;
     }
-
 };
